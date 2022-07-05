@@ -1,12 +1,11 @@
 class ForeCastDaysModel {
-  var _dateTime;
   var _temp;
   var _main;
   var _description;
 
-  get dateTime => this._dateTime;
+  var _datetime;
 
-  set dateTime(value) => this._dateTime = value;
+  get datetime => _datetime;
 
   get temp => this._temp;
 
@@ -20,5 +19,5 @@ class ForeCastDaysModel {
 
   set description(value) => this._description = value;
 
-  ForeCastDaysModel(this._dateTime, this._temp, this._main, this._description);
+  ForeCastDaysModel(this._datetime, this._temp, this._main, this._description);
 }

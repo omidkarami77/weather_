@@ -33,7 +33,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Future<CurrentCityDataModel>? currentWeatherFeature;
   StreamController<List<ForeCastDaysModel>>? steamForeCastDays;
-  var cityName = 'texas';
+  var cityName = 'moscow';
   var lat;
   var long;
   var apikey = '789356c0c7a94435f532420a154aa33c';
@@ -66,11 +66,12 @@ class _MyAppState extends State<MyApp> {
           builder: (context, snapshot) {
             if (snapshot.hasData) {
               CurrentCityDataModel cityDataModel = snapshot.data!;
+              SendRequest7DaysForcast(lat, long);
 
               final formatter = DateFormat.jm();
               var sunrise = formatter.format(
                   new DateTime.fromMillisecondsSinceEpoch(
-                      cityDataModel!.sunrise * 1000,
+                      cityDataModel.sunrise * 1000,
                       isUtc: true));
               var sunset = formatter.format(
                   new DateTime.fromMillisecondsSinceEpoch(
@@ -207,38 +208,32 @@ class _MyAppState extends State<MyApp> {
                           child: Padding(
                             padding: const EdgeInsets.only(top: 10),
                             child: Center(
-                              child: ListView.builder(
-                                itemCount: 6,
-                                shrinkWrap: true,
-                                scrollDirection: Axis.horizontal,
-                                itemBuilder:
-                                    (BuildContext context, int position) {
-                                  return Container(
-                                    height: 60,
-                                    width: 70,
-                                    child: Card(
-                                      color: Colors.transparent,
-                                      child: Column(children: [
-                                        Text(
-                                          "fri ,8pm",
-                                          style: TextStyle(
-                                              color: Colors.grey, fontSize: 15),
+                              child: StreamBuilder<List<ForeCastDaysModel>>(
+                                  stream: steamForeCastDays!.stream,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      List<ForeCastDaysModel>? foreCastDays =
+                                          snapshot.data;
+
+                                      return ListView.builder(
+                                          itemCount: 6,
+                                          shrinkWrap: true,
+                                          scrollDirection: Axis.horizontal,
+                                          itemBuilder: (BuildContext context,
+                                              int position) {
+                                            return listViewItems(
+                                                foreCastDays![position + 1]);
+                                          });
+                                    } else {
+                                      return Center(
+                                        child: JumpingDotsProgressIndicator(
+                                          color: Colors.black,
+                                          fontSize: 60,
+                                          dotSpacing: 2,
                                         ),
-                                        Expanded(
-                                            child:
-                                                setIconForMain(cityDataModel)),
-                                        Text(
-                                          "14",
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 20),
-                                        ),
-                                      ]),
-                                      elevation: 0,
-                                    ),
-                                  );
-                                },
-                              ),
+                                      );
+                                    }
+                                  }),
                             ),
                           ),
                         ),
@@ -376,8 +371,35 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Image setIconForMain(CurrentCityDataModel model) {
-    String description = model.decription!;
+  Container listViewItems(foreCastDaysModel) {
+    print(foreCastDaysModel);
+    return Container(
+      height: 60,
+      width: 70,
+      child: Card(
+        color: Colors.transparent,
+        child: Column(
+          children: [
+            Text(
+              foreCastDaysModel.datetime,
+              style: TextStyle(color: Colors.grey, fontSize: 15),
+            ),
+            Expanded(
+              child: setIconForMain(foreCastDaysModel),
+            ),
+            Text(
+              "${foreCastDaysModel.temp.round()}",
+              style: TextStyle(color: Colors.white, fontSize: 20),
+            ),
+          ],
+        ),
+        elevation: 0,
+      ),
+    );
+  }
+
+  Image setIconForMain(ForeCastDaysModel model) {
+    String description = model.description!;
     if (description == "clear sky") {
       return Image(
           image: AssetImage(
@@ -409,11 +431,11 @@ class _MyAppState extends State<MyApp> {
     print(response.statusCode);
 
     lat = response.data['coord']['lat'];
-    long = response.data['coord']['long'];
+    long = response.data['coord']['lon'];
     var dataModel = CurrentCityDataModel(
         response.data['name'],
         response.data['weather'][0]['main'],
-        response.data['coord']['long'],
+        response.data['coord']['lon'],
         response.data['coord']['lat'],
         response.data['weather'][0]['description'],
         response.data['main']['temp'],
@@ -430,37 +452,38 @@ class _MyAppState extends State<MyApp> {
     return dataModel;
   }
 
-  void SendRequest7DaysForeCast(lat, long) async {
+  void SendRequest7DaysForcast(lat, lon) async {
     List<ForeCastDaysModel> list = [];
 
     try {
       var response = await Dio().get(
-          "https://api.openweathermap.org/data/2.5/onecall",
+          "http://api.openweathermap.org/data/2.5/onecall",
           queryParameters: {
             'lat': lat,
-            'long': long,
-            'exlude': 'minutely,hourly',
+            'lon': lon,
+            'exclude': 'minutely,hourly',
             'appid': apikey,
             'units': 'metric'
           });
 
       final formatter = DateFormat.MMMd();
 
-      for (var i = 0; i < 8; i++) {
+      for (int i = 0; i < 8; i++) {
         var model = response.data['daily'][i];
-        var dt = formatter.format(new DateTime.fromMillisecondsSinceEpoch(
-            model['dt'] = 1000,
-            isUtc: true));
 
-        ForeCastDaysModel foreCastDaysModel = ForeCastDaysModel(
+        //change dt to our dateFormat ---Jun 23--- for Example
+        var dt = formatter.format(new DateTime.fromMillisecondsSinceEpoch(
+            model['dt'] * 1000,
+            isUtc: true));
+        // print(dt + " : " +model['weather'][0]['description']);
+
+        ForeCastDaysModel forecastDaysModel = new ForeCastDaysModel(
             dt,
             model['temp']['day'],
             model['weather'][0]['main'],
             model['weather'][0]['description']);
-
-        list.add(foreCastDaysModel);
+        list.add(forecastDaysModel);
       }
-
       steamForeCastDays!.add(list);
     } on DioError catch (e) {
       print(e.response!.statusCode);
