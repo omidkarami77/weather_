@@ -18,6 +18,7 @@ class Application extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       home: MyApp(),
     );
   }
@@ -33,24 +34,25 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   Future<CurrentCityDataModel>? currentWeatherFeature;
   StreamController<List<ForeCastDaysModel>>? steamForeCastDays;
-  var cityName = 'moscow';
+  TextEditingController textEditingController = TextEditingController();
+
+  var cityName = 'tehran';
   var lat;
   var long;
   var apikey = '789356c0c7a94435f532420a154aa33c';
 
-  TextEditingController textEditingController = new TextEditingController();
-
   @override
   void initState() {
     super.initState();
-    currentWeatherFeature = SendRequestCurrentWeather(cityName);
-    steamForeCastDays = StreamController<List<ForeCastDaysModel>>();
+    CallRequests();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
+        backgroundColor: Colors.blue[900],
         title: Text("Weather App"),
         elevation: 0,
         actions: [
@@ -94,18 +96,28 @@ class _MyAppState extends State<MyApp> {
                           child: Row(
                             children: [
                               Padding(
-                                padding: EdgeInsets.only(right: 15),
-                                child: ElevatedButton(
-                                  onPressed: () {},
-                                  child: Text("find"),
-                                ),
-                              ),
+                                  padding: EdgeInsets.only(right: 15),
+                                  child: ElevatedButton(
+                                    child: Text("search"),
+                                    onPressed: () {
+                                      setState(() {
+                                        currentWeatherFeature =
+                                            SendRequestCurrentWeather(
+                                          textEditingController.text.toString(),
+                                        );
+                                        print(textEditingController.text);
+                                      });
+                                    },
+                                  )),
                               Expanded(
                                 child: TextField(
                                   controller: textEditingController,
+                                  style: TextStyle(color: Colors.white),
                                   decoration: InputDecoration(
                                       border: UnderlineInputBorder(),
-                                      hintText: 'Enter a city name '),
+                                      hintText: 'Enter a city name ',
+                                      hintStyle:
+                                          TextStyle(color: Colors.white)),
                                 ),
                               )
                             ],
@@ -121,17 +133,13 @@ class _MyAppState extends State<MyApp> {
                         Padding(
                           padding: const EdgeInsets.only(top: 20),
                           child: Text(
-                            cityDataModel.decription.toString(),
+                            cityDataModel.description.toString(),
                             style: TextStyle(color: Colors.grey, fontSize: 20),
                           ),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(top: 30.0),
-                          child: Icon(
-                            Icons.wb_sunny_outlined,
-                            color: Colors.white,
-                            size: 80,
-                          ),
+                          child: setIconForMain(cityDataModel),
                         ),
                         Padding(
                           padding: const EdgeInsets.only(top: 15.0),
@@ -398,13 +406,11 @@ class _MyAppState extends State<MyApp> {
     );
   }
 
-  Image setIconForMain(ForeCastDaysModel model) {
+  Image setIconForMain(model) {
     String description = model.description!;
+
     if (description == "clear sky") {
-      return Image(
-          image: AssetImage(
-        'images/icons8-sun-96.png',
-      ));
+      return Image(image: AssetImage('images/icons8-sun-96.png'));
     } else if (description == "few clouds") {
       return Image(image: AssetImage('images/icons8-partly-cloudy-day-80.png'));
     } else if (description.contains("clouds")) {
@@ -450,6 +456,11 @@ class _MyAppState extends State<MyApp> {
         response.data['sys']['sunset']);
 
     return dataModel;
+  }
+
+  void CallRequests() {
+    currentWeatherFeature = SendRequestCurrentWeather(cityName);
+    steamForeCastDays = StreamController<List<ForeCastDaysModel>>();
   }
 
   void SendRequest7DaysForcast(lat, lon) async {

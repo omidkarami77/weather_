@@ -3,7 +3,7 @@ class CurrentCityDataModel {
   var _long;
   var _lat;
   var _main;
-  String? decription;
+  String? _description;
   var _temp;
   var _temp_min;
   var _temp_max;
@@ -18,6 +18,10 @@ class CurrentCityDataModel {
 
   set cityName(String? value) => this._cityName = value;
 
+  get description => this._description;
+
+  set description(value) => this._description = value;
+
   get long => this._long;
 
   set long(value) => this._long = value;
@@ -29,10 +33,6 @@ class CurrentCityDataModel {
   get main => this._main;
 
   set main(value) => this._main = value;
-
-  get getDecription => this.decription;
-
-  set setDecription(decription) => this.decription = decription;
 
   get temp => this._temp;
 
@@ -79,7 +79,7 @@ class CurrentCityDataModel {
       this._main,
       this._long,
       this._lat,
-      this.decription,
+      this._description,
       this._temp,
       this._temp_max,
       this._temp_min,
